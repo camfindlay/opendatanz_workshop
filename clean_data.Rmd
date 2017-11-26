@@ -1,0 +1,259 @@
+---
+title: "tidyverse_intro"
+output: html_document
+---
+
+This is a setup for when you need to _Knit_ files - into PDF, HTML, etc.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+The following chunk of code is for installing required packages.
+
+```{r load_packages}
+# A slightly more elegant way of loading packages than what I showed during workshop.
+
+# It's a function that checks for you as to whether packages need to be installed.
+# You don't need to know how it works to use it. But explanation is in comments.
+
+check_packages <- function(pkg) {
+  # This vector checks packages that are not installed yet.
+  new_pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+
+  # If there are new packages then it installs them along with dependencies.
+  if (length(new_pkg)) {
+    install.packages(new_pkg, dependencies = TRUE)
+  }
+  # Apply statement applies each package name to require, so require('tidyverse')
+  # And now they're loaded into your gloabal environment
+  sapply(pkg, require, character.only = TRUE)
+}
+
+# Here inside this vector you load all the packages you need.
+packages <- c("tidyverse", "zoo", "hrbrthemes")
+
+# Then you run the check_packages function and it loads everything.
+check_packages(packages)
+```
+
+Now, we have the packages we need. Next, we start reading the data. All the data downloaded from *Inforshare* is stored inside the `raw_data` folder. These files are untouched.
+
+We started by figuring out what was wrong with the data.
+
+Then, how we might structure it.
+
+The first step is to have clean column names that we can reuse later.
+
+```{r column_names}
+# Firstly, we want to prepare column names - in this case country names.
+
+# Extract country names, to use as column names for data frames
+nz_arrival_names <- read_csv("raw_data/nz_2000_arrivals.csv", col_names = FALSE, n_max = 1, skip = 2)
+
+# Convert to character vector
+country_names <- as.character(as.vector(nz_arrival_names))
+
+# Remove the data frame from the global environment.
+rm(nz_arrival_names)
+
+# Assign first value to the character vector for the date row
+country_names[1] <- "month"
+
+# You can check this code one step at a time by yourself.
+```
+
+Now we're going to walk step by step through how we can clean the data set.
+
+First we read the CSV file, skipping first four rows and stoping at 206.
+
+```{r}
+nz_arrivals_2000 <- read_csv("raw_data/nz_2000_arrivals.csv", col_names = FALSE, n_max = 206, skip = 4)
+```
+
+Next we assign the column names we created in `country_names` to the data frame we just read.
+
+```{r}
+names(nz_arrivals_2000) <- country_names
+
+
+# We can see what the dataset looks like -
+nz_arrivals_2000
+```
+
+
+Then we rename the column names that are inconsistent. `rename` comes from `dplyr` package.
+
+
+We're also piping the dataframe. One of the ways to think about this is, `data_frame` (then) `some_function` (then) `another_function` - whereby output of each step becomes the input for the next
+
+```{r}
+
+nz_arrivals_2000 %>% rename(
+  Total = `TOTAL ALL COUNTRIES OF RESIDENCE`,
+  China = `China, People's Republic of`,
+  Oceania = `OCEANIA`,
+  Asia = `ASIA`,
+  Europe = EUROPE,
+  `Africa and the Middle East` = `AFRICA AND THE MIDDLE EAST`,
+  `Hong Kong` = `Hong Kong (Special Administrative Region)`,
+  `German Democractic Republic` = `Germany, Democratic Republic of`,
+  Americas = AMERICAS,
+  `South Korea` = `Korea, Republic of`,
+  Palestine = `Gaza Strip/Palestine/West Bank`,
+  `Not Stated` = `NOT STATED`
+)
+
+
+
+
+
+  mutate(month = gsub("M", "/", month, fixed = TRUE)) %>%
+  separate(month, c("year", "mon"), sep = "/") %>%
+  mutate(day = "01") %>%
+  unite(month, day, mon, year, sep = "/") %>%
+  mutate(month = as.Date(month, format = "%d/%m/%Y")) %>%
+  mutate(count = as.integer(count)) %>%
+  filter(country == "Australia") %>%
+  ggplot(., aes(x = month, y = count, color = "red")) + geom_line() + theme_ipsum() + theme(legend.position = "none")
+```
+
+
+Next we gather the variables, into country and counts column. Going from a wide to long format.
+
+To do this we use `gather` function from `tidyr` package. For opposite action, long to wide format, we'd use `spread` function.
+
+```{r}
+nz_arrivals_2000 %>%
+  rename(
+    Total = `TOTAL ALL COUNTRIES OF RESIDENCE`,
+    China = `China, People's Republic of`,
+    Oceania = `OCEANIA`,
+    Asia = `ASIA`,
+    Europe = EUROPE,
+    `Africa and the Middle East` = `AFRICA AND THE MIDDLE EAST`,
+    `Hong Kong` = `Hong Kong (Special Administrative Region)`,
+    `German Democractic Republic` = `Germany, Democratic Republic of`,
+    Americas = AMERICAS,
+    `South Korea` = `Korea, Republic of`,
+    Palestine = `Gaza Strip/Palestine/West Bank`,
+    `Not Stated` = `NOT STATED`
+  ) %>%
+  gather(country, count, -month)
+```
+
+At this stage, our data set is in a tidy format.
+
+However, data types are inconsistent.
+
+Dates and integers are not properly formatted.
+
+Here we do series of steps to format the date properly. We use `gsub` to replace `M` with `\` - then we go through steps to get a date format. There are multiple ways of approaching this step. You can probably come up with a better one and reduce the number of steps.
+
+```{r}
+nz_arrivals_2000 %>%
+  rename(
+    Total = `TOTAL ALL COUNTRIES OF RESIDENCE`,
+    China = `China, People's Republic of`,
+    Oceania = `OCEANIA`,
+    Asia = `ASIA`,
+    Europe = EUROPE,
+    `Africa and the Middle East` = `AFRICA AND THE MIDDLE EAST`,
+    `Hong Kong` = `Hong Kong (Special Administrative Region)`,
+    `German Democractic Republic` = `Germany, Democratic Republic of`,
+    Americas = AMERICAS,
+    `South Korea` = `Korea, Republic of`,
+    Palestine = `Gaza Strip/Palestine/West Bank`,
+    `Not Stated` = `NOT STATED`
+  ) %>%
+  gather(country, count, -month) %>% 
+  mutate(month = gsub("M", "/", month, fixed = TRUE)) %>%
+  separate(month, c("year", "mon"), sep = "/") %>%
+  mutate(day = "01") %>%
+  unite(month, day, mon, year, sep = "/") %>%
+  mutate(month = as.Date(month, format ="%d/%m/%Y")) %>%
+  mutate(count = as.integer(count))
+```
+
+
+The above code gives us a tidy data format with proper data types.
+
+We can quickly see the patterns by making a chart without necessarily saving anything into a variable.
+
+For example, if we wanted to see arrivals from Australia for NZ citizens since 2000.
+
+We can `filter` and then make a plot using `ggplot`.
+
+```{r}
+nz_arrivals_2000 %>%
+  rename(
+    Total = `TOTAL ALL COUNTRIES OF RESIDENCE`,
+    China = `China, People's Republic of`,
+    Oceania = `OCEANIA`,
+    Asia = `ASIA`,
+    Europe = EUROPE,
+    `Africa and the Middle East` = `AFRICA AND THE MIDDLE EAST`,
+    `Hong Kong` = `Hong Kong (Special Administrative Region)`,
+    `German Democractic Republic` = `Germany, Democratic Republic of`,
+    Americas = AMERICAS,
+    `South Korea` = `Korea, Republic of`,
+    Palestine = `Gaza Strip/Palestine/West Bank`,
+    `Not Stated` = `NOT STATED`
+  ) %>%
+  gather(country, count, -month) %>% 
+  mutate(month = gsub("M", "/", month, fixed = TRUE)) %>%
+  separate(month, c("year", "mon"), sep = "/") %>%
+  mutate(day = "01") %>%
+  unite(month, day, mon, year, sep = "/") %>%
+  mutate(month = as.Date(month, format ="%d/%m/%Y")) %>%
+  mutate(count = as.integer(count)) %>% 
+  filter(country == "Australia") %>% 
+  ggplot(., aes(x=month, y=count)) + geom_line()
+```
+
+In this plot, we can see a lot of people arrive home at the same time. 
+
+Yep, that's people coming home for Christmas/New Year holidays.
+
+Recently, however these arrivals have gone up - probably signaling a change in patterns. This is a simple way to explore the data set.
+
+
+Now we have created some code to clean a `data frame` - but we want to reuse this code. We do that by creating a function. We basically generalise the solution to same problem.
+
+
+```{r data_cleaning_function, message=FALSE, warning=FALSE, include=FALSE}
+
+tidyToLongFormat <- function(input_frame, citizen, travel) {
+  names(input_frame) <- country_names
+
+  processed_data <- input_frame %>%
+    rename(
+      Total = `TOTAL ALL COUNTRIES OF RESIDENCE`,
+      China = `China, People's Republic of`,
+      Oceania = `OCEANIA`,
+      Asia = `ASIA`,
+      Europe = EUROPE,
+      `Africa and the Middle East` = `AFRICA AND THE MIDDLE EAST`,
+      `Hong Kong` = `Hong Kong (Special Administrative Region)`,
+      `German Democractic Republic` = `Germany, Democratic Republic of`,
+      Americas = AMERICAS,
+      `South Korea` = `Korea, Republic of`,
+      Palestine = `Gaza Strip/Palestine/West Bank`,
+      `Not Stated` = `NOT STATED`
+    ) %>%
+    gather(country, count, -month) %>%
+    mutate(month = gsub("M", "/", month, fixed = TRUE)) %>%
+    separate(month, c("year", "mon"), sep = "/") %>%
+    mutate(day = "01") %>%
+    unite(month, day, mon, year, sep = "/") %>%
+    mutate(month = as.Date(month, format = "%d/%m/%Y")) %>%
+    mutate(count = as.integer(count)) %>%
+    mutate_(
+      citizen = !citizen,
+      travel = !travel
+    )
+
+  processed_data
+}
+```
+
