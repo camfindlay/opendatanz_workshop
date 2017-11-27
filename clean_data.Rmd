@@ -220,6 +220,9 @@ Recently, however these arrivals have gone up - probably signaling a change in p
 
 Now we have created some code to clean a `data frame` - but we want to reuse this code. We do that by creating a function. We basically generalise the solution to same problem.
 
+We can put this in a function as below. 
+
+PLEASE NOTE - This function was written prior to dplyr 0.6, now few things have changed. I'll create a second function to show these changes and add it to this file later. Still you should be able to grasp the concept.
 
 ```{r data_cleaning_function, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -249,11 +252,136 @@ tidyToLongFormat <- function(input_frame, citizen, travel) {
     mutate(month = as.Date(month, format = "%d/%m/%Y")) %>%
     mutate(count = as.integer(count)) %>%
     mutate_(
-      citizen = !citizen,
-      travel = !travel
+      citizen = ~citizen,
+      travel = ~travel
     )
 
   processed_data
 }
+```
+
+
+Now, we can reuse this function to read all the files.
+
+```{r read_all_data, message=FALSE, warning=FALSE}
+nz_arrivals_2000 <- read_csv("raw_data/nz_2000_arrivals.csv", 
+                             col_names = FALSE, n_max = 206, skip = 4)
+
+nz_departures_2000 <- read_csv("raw_data/nz_2000_departures.csv",
+                               col_names = FALSE, n_max = 206, skip = 4)
+
+aus_arrivals_2000 <- read_csv("raw_data/aus_2000_arrivals.csv",
+                              col_names = FALSE, n_max = 206, skip = 4)
+
+aus_departures_2000 <- read_csv("raw_data/aus_2000_departures.csv",
+                              col_names = FALSE, n_max = 206, skip = 4)
+
+all_arrivals_2000 <- read_csv("raw_data/all_2000_arrivals.csv",
+                              col_names = FALSE, n_max = 206, skip = 4)
+
+all_departures_2000 <- read_csv("raw_data/all_2000_departures.csv",
+                                col_names = FALSE, n_max = 206, skip = 4)
+
+nz_departures_1978 <- read_csv("raw_data/nz_1978_departures.csv",
+                             col_names = FALSE, n_max = 261, skip = 4)
+
+nz_arrivals_1978 <- read_csv("raw_data/ nz_1978_arrivals.csv",
+                            col_names = FALSE, n_max = 261, skip = 4)
+
+aus_arrivals_1978 <- read_csv("raw_data/aus_1978_arrivals.csv",
+                              col_names = FALSE, n_max = 261, skip = 4)
+
+aus_departures_1978 <- read_csv("raw_data/aus_1978_departures.csv",
+                              col_names = FALSE, n_max = 261, skip = 4)
+
+all_arrivals_1978 <- read_csv("raw_data/all_1978_arrivals.csv",
+                              col_names = FALSE, n_max = 261, skip = 4)
+
+all_departures_1978 <- read_csv("raw_data/all_1978_departures.csv",
+                                col_names = FALSE, n_max = 261, skip = 4)
+
+processed_nz_arrivals_2000 <- tidyToLongFormat(nz_arrivals_2000, "New Zealand","Arrivals") 
+processed_nz_departures_2000 <- tidyToLongFormat(nz_departures_2000,"New Zealand","Departures") 
+
+processed_aus_arrivals_2000 <- tidyToLongFormat(aus_arrivals_2000,"Australia","Arrivals") 
+processed_aus_departures_2000 <- tidyToLongFormat(aus_departures_2000,"Australia","Departures")
+
+processed_all_arrivals_2000 <- tidyToLongFormat(all_arrivals_2000,"All","Arrivals") 
+processed_all_departures_2000 <- tidyToLongFormat(all_departures_2000,"All","Departures") 
+
+processed_nz_arrivals_1978 <- tidyToLongFormat(nz_arrivals_1978, "New Zealand","Arrivals")
+processed_nz_departures_1978  <- tidyToLongFormat(nz_departures_1978,"New Zealand","Departures")
+
+processed_aus_arrivals_1978  <- tidyToLongFormat(aus_arrivals_1978,"Australia","Arrivals")
+processed_aus_departures_1978  <- tidyToLongFormat(aus_departures_1978,"Australia","Departures")
+
+processed_all_arrivals_1978  <- tidyToLongFormat(all_arrivals_1978,"All","Arrivals")
+processed_all_departures_1978  <- tidyToLongFormat(all_departures_1978,"All","Departures")
+
+nz_departures_2017m <- read_csv("raw_data/nz_2017march_departures.csv", col_names =  FALSE, n_max = 1, skip = 4)
+nz_arrivals_2017m <- read_csv("raw_data/nz_2017march_arrivals.csv", col_names =  FALSE, n_max = 1, skip = 4)
+
+processed_nz_departures_2017m <- tidyToLongFormat(nz_departures_2017m, "New Zealand","Departures")
+processed_nz_arrivals_2017m <- tidyToLongFormat(nz_arrivals_2017m, "New Zealand","Arrivals")
+
+aus_departures_2017m <- read_csv("raw_data/aus_2017march_departures.csv", col_names =  FALSE, n_max = 1, skip = 4)
+aus_arrivals_2017m <- read_csv("raw_data/aus_2017march_arrivals.csv", col_names =  FALSE, n_max = 1, skip = 4)
+
+processed_aus_departures_2017m <- tidyToLongFormat(aus_departures_2017m, "Australia","Departures")
+processed_aus_arrivals_2017m <- tidyToLongFormat(aus_arrivals_2017m, "Australia","Arrivals")
+
+all_departures_2017m <- read_csv("raw_data/all_2017march_departures.csv", col_names =  FALSE, n_max = 1, skip = 4)
+all_arrivals_2017m <- read_csv("raw_data/all_2017march_arrivals.csv", col_names =  FALSE, n_max = 1, skip = 4)
+
+processed_all_departures_2017m <- tidyToLongFormat(all_departures_2017m, "All","Departures")
+processed_all_arrivals_2017m <- tidyToLongFormat(all_arrivals_2017m, "All","Arrivals")
+
+
+
+migration <- rbind(processed_all_arrivals_1978, processed_all_arrivals_2000, processed_all_departures_1978,
+      processed_all_departures_2000, processed_aus_arrivals_1978, processed_aus_arrivals_2000,
+      processed_aus_departures_1978, processed_aus_departures_2000, processed_nz_arrivals_1978,
+      processed_nz_arrivals_2000, processed_nz_departures_1978,
+      processed_nz_departures_2000, processed_all_arrivals_2017m, processed_all_departures_2017m,
+      processed_aus_departures_2017m, processed_aus_arrivals_2017m, processed_nz_arrivals_2017m,
+      processed_nz_departures_2017m)
+
+rm(processed_all_arrivals_1978, processed_all_arrivals_2000, processed_all_departures_1978,
+      processed_all_departures_2000, processed_aus_arrivals_1978, processed_aus_arrivals_2000,
+      processed_aus_departures_1978, processed_aus_departures_2000, processed_nz_arrivals_1978,
+      processed_nz_arrivals_2000, processed_nz_departures_1978,
+      processed_nz_departures_2000,all_arrivals_1978, all_arrivals_2000, all_departures_1978,
+      all_departures_2000, aus_arrivals_1978, aus_arrivals_2000,
+      aus_departures_1978, aus_departures_2000, nz_arrivals_1978,
+      nz_arrivals_2000, nz_departures_1978)
+
+# This gives us the complete data frame, with all the migration data. Now we can visualise it and play around with different ways to structure data.
+
+migration
+```
+
+
+Below is an example of plots. You should play around with data and filter/combine by different variables to see what plots you can create.
+
+```{r plot_data}
+# An example of creating plot
+
+p <- migration %>% filter(citizen == "All") %>% filter(travel  == "Arrivals") %>%
+  ggplot(., aes(x = month, y =count, colour = country)) + 
+  geom_point()+
+  geom_smooth() +
+  facet_wrap(~country) + 
+  theme(legend.position="none")
+
+p2 <- migration %>% filter(citizen == "All") %>% filter(travel  == "Arrivals") %>%
+  ggplot(., aes(x = month, y =count, colour = country)) + 
+  geom_line(alpha = 0.5) + 
+  facet_wrap(~country, scales="free_y") + 
+  theme(legend.position="none")
+
+
+ggsave("countries_smooth.pdf", width = 30, height = 30)
+ggsave("countries_2.pdf", width = 30, height = 30)
+
 ```
 
